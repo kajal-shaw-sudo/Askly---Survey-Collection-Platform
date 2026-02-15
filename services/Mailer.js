@@ -1,31 +1,17 @@
-const nodemailer = require("nodemailer");
-
 class Mailer {
   constructor({ subject, recipients }, content) {
     this.subject = subject;
-    this.recipients = recipients.map(r => r.email);
+    this.recipients = recipients;
     this.content = content;
   }
 
   async send() {
-    let transporter = nodemailer.createTransport({
-      host: "smtp.gmail.com",
-      port: 587,
-      secure: false,
-      auth: {
-        user: process.env.EMAIL_USER,
-        pass: process.env.EMAIL_PASS
-      }
-    });
-
-    await transporter.sendMail({
-      from: process.env.EMAIL_USER,
-      to: this.recipients,
-      subject: this.subject,
-      html: this.content
-    });
-
-    return { status: "Sent with Nodemailer" };
+    console.log("=== Simulated Email ===");
+    console.log("Subject:", this.subject);
+    console.log("To:", this.recipients.map(r => r.email));
+    console.log("Content:", this.content);
+    console.log("=======================");
+    return { status: "Email simulated successfully" };
   }
 }
 
