@@ -8,6 +8,7 @@ const Mailer = require('../services/Mailer');
 const surveyTemplate = require('../services/emailTemplates/surveyTemplate');
 
 const Survey = mongoose.model('surveys');
+const User = mongoose.model('users');
 
 module.exports = app => {
     app.get('/api/surveys', requireLogin, async (req, res) => {
@@ -68,12 +69,26 @@ module.exports = app => {
         const mailer = new Mailer(survey, surveyTemplate(survey));
 
         try {
-        await mailer.send();
-        await survey.save();
-        req.user.credits -= 1;
-        const user = await req.user.save();
+            const user = await User.findOneAndUpdate(
+                { _id: req.user.id, credits: { $gte: 1 } },
+                { $inc: { credits: -1 } },
+                { new: true }
+            );
 
-        res.send(user);
+            if (!user) {
+                return res.status(402).send({ error: 'Not enough credits' });
+            }
+
+            try {
+                await mailer.send();
+                await survey.save();
+            } catch (err) {
+                // give the credit back if sending or saving failed
+                await User.updateOne({ _id: req.user.id }, { $inc: { credits: 1 } });
+                return res.status(422).send(err);
+            }
+
+            res.send(user);
         } catch (err) {
             res.status(422).send(err);
         }
